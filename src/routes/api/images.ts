@@ -1,14 +1,17 @@
 import express from "express";
-import { getImagesDir } from "../../utils/fsUtils";
+import { getImage } from "../../utils/fsUtils";
 import fs from "fs"
 
 const images = express.Router()
 
 images.get("/", async (req, res) => {
-    const filename = req.query.filename
+    const query = req.query
+    const { filename, width, height } = query
+    const widthNum = parseInt(width as string)
+    const heightNum = parseInt(height as string)
+    //query must contain filename to proceed
     if (filename) {
-        const imagesDir = await getImagesDir(__dirname)
-        const imagePath = `${imagesDir}/${filename}.jpg`
+        const imagePath = await getImage(filename as string, widthNum, heightNum)
         if (fs.existsSync(imagePath)) {
             res.sendFile(imagePath)
         }
