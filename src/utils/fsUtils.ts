@@ -67,6 +67,7 @@ export const getImage = async (filename: string, width: number, height: number):
     const originalImage = path.join(imagesDir, 'full', `${filename}.jpg`)
     if (checkPathExists(originalImage)) {
         if (!width && !height) {
+            console.log("returning original image as no valid width nor height was specified")
             return originalImage
         }
         //we will resize the image
