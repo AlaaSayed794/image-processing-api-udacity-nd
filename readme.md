@@ -33,14 +33,22 @@ returned error codes:
 #### GET /api/images
 - takes query parameters and returns a resized image for the user
 - `curl http://127.0.0.1:3000/api/images?filename={validFile}`
+
 returns original image or 400 if file does not exist
 - `curl http://127.0.0.1:3000/api/images?filename={validFile}&width={missingOrInvalidNum}&height={missingOrInvalidNum}`
+
 still returns original image or 400 if file does not exist
+
 - `curl http://127.0.0.1:3000/api/images?filename={validFile}&width={validNum}&height={missingOrInvalidNum}`
+
 returns resized image of specified width and original height or 400 if file does not exist
+
 - `curl http://127.0.0.1:3000/api/images?filename={validFile}&width={missingOrInvalidNum}&height={validNum}`
+
 returns resized image of specified height and original width or 400 if file does not exist
+
 - `curl http://127.0.0.1:3000/api/images?filename={validFile}&width={validNum}&height={validNum}`
+
 returns resized image of specified height and width or 400 if file does not exist
 
 #### Author:
