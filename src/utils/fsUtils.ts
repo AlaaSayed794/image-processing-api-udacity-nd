@@ -1,120 +1,146 @@
-import fs from "fs"
-import path from "path"
-import sharp from "sharp"
+import fs from 'fs';
+import path from 'path';
+import sharp from 'sharp';
 
 //returns the directory where images reside
-const getImagesDir = async (dir: string): Promise<string> => {
-    let imagesDir = ""
-    const dirContents: string[] = await fs.readdirSync(dir)
-    if (dirContents.includes("images")) {
-        imagesDir = path.join(dir, "images")
-        return imagesDir
-    }
-    else {
-        imagesDir = await getImagesDir(path.join(dir, ".."))
-        return imagesDir
-    }
-}
+export const getImagesDir = async (dir: string): Promise<string> => {
+  let imagesDir = '';
+  const dirContents: string[] = await fs.readdirSync(dir);
+  if (dirContents.includes('images')) {
+    imagesDir = path.join(dir, 'images');
+    return imagesDir;
+  } else {
+    imagesDir = await getImagesDir(path.join(dir, '..'));
+    return imagesDir;
+  }
+};
 
 const checkPathExists = (path: string): boolean => {
-    return fs.existsSync(path)
-}
+  return fs.existsSync(path);
+};
 
 const makeResizeDirIfNotExists = (dir: string): void => {
-    if (!checkPathExists(dir)) {
-        fs.mkdirSync(dir);
+  if (!checkPathExists(dir)) {
+    fs.mkdirSync(dir);
+  }
+};
+
+const resizeImageWidthToFile = async (
+  inPath: string,
+  outPath: string,
+  width: number
+): Promise<void> => {
+  const image = sharp(inPath);
+  await image.metadata().then(function(metadata) {
+    return image
+      .resize({
+        width,
+        height: metadata.height
+      })
+      .toFile(outPath);
+  });
+};
+const resizeImageHeightToFile = async (
+  inPath: string,
+  outPath: string,
+  height: number
+): Promise<void> => {
+  const image = sharp(inPath);
+  await image.metadata().then(function(metadata) {
+    return image
+      .resize({
+        width: metadata.width,
+        height
+      })
+      .toFile(outPath);
+  });
+};
+
+const resizeImageWidthAndHeightToFile = async (
+  inPath: string,
+  outPath: string,
+  width: number,
+  height: number
+): Promise<void> => {
+  await sharp(inPath)
+    .resize({
+      width,
+      height
+    })
+    .toFile(outPath);
+};
+
+export const getImage = async (
+  filename: string,
+  width: number,
+  height: number
+): Promise<string> => {
+  const imagesDir = await getImagesDir(__dirname);
+  //show full image
+  const originalImage = path.join(imagesDir, 'full', `${filename}.jpg`);
+  if (checkPathExists(originalImage)) {
+    if (!width && !height) {
+      console.log(
+        'returning original image as no valid width nor height was specified'
+      );
+      return originalImage;
     }
-}
-
-const resizeImageWidthToFile = async (inPath: string, outPath: string, width: number): Promise<void> => {
-    const image = sharp(inPath);
-    await image.metadata()
-        .then(function (metadata) {
-            return image
-                .resize({
-                    width,
-                    height: metadata.height
-                })
-                .toFile(outPath)
-        })
-}
-const resizeImageHeightToFile = async (inPath: string, outPath: string, height: number): Promise<void> => {
-    const image = sharp(inPath);
-    await image.metadata()
-        .then(function (metadata) {
-            return image
-                .resize({
-                    width: metadata.width,
-                    height
-                })
-                .toFile(outPath)
-        })
-}
-
-const resizeImageWidthAndHeightToFile = async (inPath: string, outPath: string, width: number, height: number): Promise<void> => {
-    await sharp(inPath)
-        .resize({
+    //we will resize the image
+    else {
+      makeResizeDirIfNotExists(path.join(imagesDir, 'resized'));
+      //resize width only
+      if (width && !height) {
+        const imagePath = path.join(
+          imagesDir,
+          'resized',
+          `${filename}-width${width}.jpg`
+        );
+        //resize to file if it doesn't exist
+        if (!checkPathExists(imagePath)) {
+          console.log('creating resized image and return its path');
+          await resizeImageWidthToFile(originalImage, imagePath, width);
+        } else {
+          console.log('file already exists,just return its path');
+        }
+        return imagePath;
+      }
+      //resize height only
+      else if (height && !width) {
+        const imagePath = path.join(
+          imagesDir,
+          'resized',
+          `${filename}-height${height}.jpg`
+        );
+        if (!checkPathExists(imagePath)) {
+          console.log('creating resized image and return its path');
+          await resizeImageHeightToFile(originalImage, imagePath, height);
+        } else {
+          console.log('file already exists,just return its path');
+        }
+        return imagePath;
+      }
+      //resize height and width
+      else {
+        const imagePath = path.join(
+          imagesDir,
+          'resized',
+          `${filename}-width${width}-height${height}.jpg`
+        );
+        if (!checkPathExists(imagePath)) {
+          console.log('creating resized image and return its path');
+          await resizeImageWidthAndHeightToFile(
+            originalImage,
+            imagePath,
             width,
             height
-        })
-        .toFile(outPath)
-}
-
-
-export const getImage = async (filename: string, width: number, height: number): Promise<string> => {
-    const imagesDir = await getImagesDir(__dirname)
-    //show full image
-    const originalImage = path.join(imagesDir, 'full', `${filename}.jpg`)
-    if (checkPathExists(originalImage)) {
-        if (!width && !height) {
-            console.log("returning original image as no valid width nor height was specified")
-            return originalImage
+          );
+        } else {
+          console.log('file already exists,just return its path');
         }
-        //we will resize the image
-        else {
-            makeResizeDirIfNotExists(path.join(imagesDir, 'resized'))
-            //resize width only
-            if (width && !height) {
-                const imagePath = path.join(imagesDir, "resized", `${filename}-width${width}.jpg`)
-                //resize to file if it doesn't exist
-                if (!checkPathExists(imagePath)) {
-                    console.log("creating resized image and return its path")
-                    await resizeImageWidthToFile(originalImage, imagePath, width)
-                }
-                else {
-                    console.log("file already exists,just return its path")
-                }
-                return imagePath
-            }
-            //resize height only
-            else if (height && !width) {
-                const imagePath = path.join(imagesDir, "resized", `${filename}-height${height}.jpg`)
-                if (!checkPathExists(imagePath)) {
-                    console.log("creating resized image and return its path")
-                    await resizeImageHeightToFile(originalImage, imagePath, height)
-                }
-                else {
-                    console.log("file already exists,just return its path")
-                }
-                return imagePath
-            }
-            //resize height and width
-            else {
-                const imagePath = path.join(imagesDir, "resized", `${filename}-width${width}-height${height}.jpg`)
-                if (!checkPathExists(imagePath)) {
-                    console.log("creating resized image and return its path")
-                    await resizeImageWidthAndHeightToFile(originalImage, imagePath, width, height)
-                }
-                else {
-                    console.log("file already exists,just return its path")
-                }
-                return imagePath
-            }
-
-        }
+        return imagePath;
+      }
     }
-    else {
-        return "path does not exist"
-    }
-
-}
+  } else {
+    return 'path does not exist';
+  }
+};
